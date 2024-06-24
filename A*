@@ -1,0 +1,112 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <cmath>
+#include <algorithm>
+
+struct Node {
+    int x, y;
+    double g, h;
+    Node* parent;
+
+    Node(int x, int y, double g, double h, Node* parent)
+        : x(x), y(y), g(g), h(h), parent(parent) {}
+
+    double f() const { return g + h; }
+
+    bool operator<(const Node& other) const { return f() > other.f(); }
+};
+
+double heuristic(const Node& a, const Node& b) {
+    return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
+}
+
+std::vector<Node> reconstructPath(Node* current) {
+    std::vector<Node> path;
+    while (current != nullptr) {
+        path.push_back(*current);
+        current = current->parent;
+    }
+    std::reverse(path.begin(), path.end());
+    return path;
+}
+
+std::vector<Node> aStar(const std::vector<std::vector<bool>>& grid, const Node& start, const Node& goal) {
+    std::priority_queue<Node> openSet;
+    openSet.push(start);
+
+    std::vector<std::vector<bool>> closedSet(grid.size(), std::vector<bool>(grid[0].size(), false));
+
+    while (!openSet.empty()) {
+        Node current = openSet.top();
+        openSet.pop();
+
+        if (current.x == goal.x && current.y == goal.y) {
+            return reconstructPath(&current);
+        }
+
+        closedSet[current.x][current.y] = true;
+
+        std::vector<std::pair<int, int>> neighbors = {
+            {0, 1}, {1, 0}, {0, -1}, {-1, 0}, // Movimentos: direita, baixo, esquerda, cima
+            {1, 1}, {1, -1}, {-1, 1}, {-1, -1} // Movimentos diagonais
+        };
+
+        for (const auto& [dx, dy] : neighbors) {
+            int newX = current.x + dx;
+            int newY = current.y + dy;
+
+            if (newX < 0 || newX >= grid.size() || newY < 0 || newY >= grid[0].size() || grid[newX][newY] || closedSet[newX][newY]) {
+                continue;
+            }
+
+            double gScore = current.g + 1;
+            Node neighbor(newX, newY, gScore, heuristic(Node(newX, newY, 0, 0, nullptr), goal), new Node(current));
+
+            openSet.push(neighbor);
+        }
+    }
+
+    return {};
+}
+
+int main() {
+    std::vector<std::vector<bool>> grid = {
+        { false, false, false, false, false },
+        { false, true,  false, false, true  },
+        { false, false, false, false, true  },
+        { true,  true,  false, false, false },
+        { true,  true,  true,  true,  false }
+    };
+
+    int startX, startY, goalX, goalY;
+
+    std::cout << "Insira as coordenadas do ponto inicial (x y): ";
+    std::cin >> startX >> startY;
+
+    std::cout << "Insira as coordenadas do ponto final (x y): ";
+    std::cin >> goalX >> goalY;
+
+    if (startX < 0 || startX >= grid.size() || startY < 0 || startY >= grid[0].size() ||
+        goalX < 0 || goalX >= grid.size() || goalY < 0 || goalY >= grid[0].size() ||
+        grid[startX][startY] || grid[goalX][goalY]) {
+        std::cout << "Coordenadas inválidas ou em obstáculo. Insira novamente." << std::endl;
+        return -1;
+    }
+
+    Node start(startX, startY, 0, heuristic(Node(startX, startY, 0, 0, nullptr), Node(goalX, goalY, 0, 0, nullptr)), nullptr);
+    Node goal(goalX, goalY, 0, 0, nullptr);
+
+    std::vector<Node> path = aStar(grid, start, goal);
+
+    if (path.empty()) {
+        std::cout << "Nenhum caminho encontrado!" << std::endl;
+    } else {
+        std::cout << "Caminho encontrado:" << std::endl;
+        for (const Node& node : path) {
+            std::cout << "(" << node.x << "," << node.y << ")" << std::endl;
+        }
+    }
+
+    return 0;
+}
