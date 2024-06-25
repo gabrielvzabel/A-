@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>A*</title>
-  <!-- Incluindo Bootstrap para estilos opcionais -->
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
@@ -37,10 +36,9 @@
       color: #fff;
       font-weight: bold;
       align-items: center;
-      
     }
     input[type="number"] {
-      width: 50px;
+      width: 60px;
       height: 30px;
       margin: 10px;
       padding: 10px;
@@ -117,10 +115,10 @@
       canvas.parent('canvas-container');
       initializeGrid();
       createObstacles();
-      startX = floor(random(cols));
-      startY = floor(random(rows));
-      goalX = floor(random(cols));
-      goalY = floor(random(rows));
+      startX = parseInt(document.getElementById('startX').value) || floor(random(cols));
+      startY = parseInt(document.getElementById('startY').value) || floor(random(rows));
+      goalX = parseInt(document.getElementById('goalX').value) || floor(random(cols));
+      goalY = parseInt(document.getElementById('goalY').value) || floor(random(rows));
       startNode = new Node(startX, startY, 0, heuristic(startX, startY, goalX, goalY), null);
       goalNode = new Node(goalX, goalY, 0, 0, null);
       drawGrid();
@@ -131,6 +129,12 @@
         if (pathIndex < path.length) {
           drawPath(path[pathIndex]);
           pathIndex++;
+        } else {
+          fill(0);
+          noStroke();
+          rect(startX * cellSize, startY * cellSize, cellSize, cellSize); // Cor preta para o início
+          fill(0, 0, 255);
+          rect(goalX * cellSize, goalY * cellSize, cellSize, cellSize); // Cor azul para o objetivo
         }
       }
     }
@@ -176,7 +180,7 @@
     }
 
     function drawPath(node) {
-      fill(0, 255, 0);
+      fill(0, 255, 0, 100);
       noStroke();
       rect(node.x * cellSize, node.y * cellSize, cellSize, cellSize);
     }
