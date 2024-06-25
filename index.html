@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.play/1.4.0/p5.play.js"></script>
+  <style>
+    canvas {
+      border: 1px solid black;
+      margin: 20px auto;
+      display: block;
+    }
+    h1, h2 {
+      text-align: center;
+      margin: 20px;
+    }
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background-color: #333;
+      text-align: center;
+    }
+
+   .controls {
+      text-align: center;
+      margin: 20px;
+      background-color: #444;
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid #555;
+    }
+
+    label {
+      color: #000000;
+      font-weight: bold;
+    }
+
+    input[type="number"] {
+      width: 50px;
+      height: 30px;
+      margin: 10px;
+      padding: 10px;
+      border: 1px solid #555;
+      border-radius: 5px;
+      background-color: #444;
+      color: #fff;
+    }
+
+    button[type="button"] {
+      background-color: #006eff;
+      color: #333;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button[type="button"]:hover {
+      background-color: #006eff;
+    }
+  </style>
+</head>
+<body>
+  <h1 style="color: #fff; font-weight: bold;">A*</h1>
+  <h4 style="color: #fff; font-weight: bold;">Preto = Início, Azul = Objetivo</h4>
+  <div class="controls">
+    <label for="startX">Coluna do inicio:</label>
+    <input id="startX" type="number" value="0" />
+    <label for="startY">Linha do inicio:</label>
+    <input id="startY" type="number" value="0" />
+    <label for="goalX">Coluna do objetivo:</label>
+    <input id="goalX" type="number" value="4" />
+    <label for="goalY">Linha do objetivo:</label>
+    <input id="goalY" type="number" value="4" />
+    <button id="run" style="background-color: #006eff; color: #333;">Iniciar A*</button>
+    <button id="reset" style="background-color: #f55656; color: #333;">Reiniciar</button>
+  </div>
+  <script>
+    let grid = [];
+    let cols = 10;
+    let rows = 10;
+    let cellSize = 40;
+    let startX, startY, goalX, goalY;
+    let path = [];
+    let obstacles = [];
+    let openSet = [];
+    let closedSet = [];
+    let startNode, goalNode;
+    let foundPath = false;
+    let pathIndex = 0;
+
+    function setup() {
+      let canvas = createCanvas(cols * cellSize, rows * cellSize);
+      canvas.parent(document.body);
+      initializeGrid();
+      createObstacles();
+      startX = floor(random(cols));
+      startY = floor(random(rows));
+      goalX = floor(random(cols));
+      goalY = floor(random(rows));
+      startNode = new Node(startX, startY, 0, heuristic(startX, startY, goalX, goalY), null);
+      goalNode = new Node(goalX, goalY, 0, 0, null);
+      drawGrid();
+    }
+
+    function draw() {
+      if (foundPath) {
+        if (pathIndex < path.length) {
+          drawPath(path[pathIndex]);
+          pathIndex++;
+        }
+      }
+    }
+
+    function initializeGrid() {
+      grid = new Array(cols);
+      for (let i = 0; i < cols; i++) {
+        grid[i] = new Array(rows).fill(false);
+      }
+    }
+
+    function createObstacles() {
+      obstacles = [];
+      for (let i = 0; i < 20; i++) {
+        let x = floor(random(cols));
+        let y = floor(random(rows));
+        if (!grid[x][y]) {
+          grid[x][y] = true;
+          obstacles.push({ x, y });
+        }
+      }
+    }
+
+    function drawGrid() {
+      background(240);
+      for (let x = 0;x < cols; x++) {
+        for (let y = 0; y < rows; y++) {
+          if (grid[x][y]) {
+            fill(255, 0, 0);
+          } else if (x === startX && y === startY) {
+            fill(0); // Quadrado preto como início
+            rect(x * cellSize, y * cellSize, cellSize, cellSize);
+          } else if (x === goalX && y === goalY) {
+            fill(0, 0, 255); // Quadrado azul como objetivo
+            rect(x * cellSize, y * cellSize, cellSize, cellSize);
+          } else {
+            fill(255);
+          }
+          stroke(0);
+          rect(x * cellSize, y * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+
+    function drawPath(node) {
+      fill(0, 255, 0);
+      noStroke();
+      rect(node.x * cellSize, node.y * cellSize, cellSize, cellSize);
+    }
+
+    function aStar() {
+      openSet = [];
+      closedSet = [];
+      startNode = new Node(startX, startY, 0, heuristic(startX, startY, goalX, goalY), null);
+      goalNode = new Node(goalX, goalY, 0, 0, null);
+      openSet.push(startNode);
+      foundPath = false;
+      path = [];
+
+      while (openSet.length > 0) {
+        let current = openSet[0];
+        for (let i = 1; i < openSet.length; i++) {
+          if (openSet[i].f() < current.f()) {
+            current = openSet[i];
+          }
+        }
+
+        if (current.equals(goalNode)) {
+          path = reconstructPath(current);
+          foundPath = true;
+          pathIndex = 0;
+          return;
+        }
+
+        removeFromArray(openSet, current);
+        closedSet.push(current);
+
+        let neighbors = getNeighbors(current);
+
+        for (let neighbor of neighbors) {
+          if (!inArray(closedSet, neighbor)) {
+            let tempG = current.g + 1;
+
+            let newPath = false;
+            if (inArray(openSet, neighbor)) {
+              if (tempG < neighbor.g) {
+                neighbor.g = tempG;
+                newPath = true;
+              }
+            } else {
+              neighbor.g = tempG;
+              newPath = true;
+              openSet.push(neighbor);
+            }
+
+            if (newPath) {
+              neighbor.h = heuristic(neighbor.x, neighbor.y, goalX, goalY);
+              neighbor.parent = current;
+            }
+          }
+        }
+      }
+
+      foundPath = false;
+    }
+
+    function getNeighbors(node) {
+      let neighbors = [];
+      let directions = [
+        { x: 1, y: 0 },
+        { x: -1, y: 0 },
+        { x: 0, y: 1 },
+        { x: 0, y: -1 },
+        { x: 1, y: 1 }, 
+        { x: 1, y: -1 },
+        { x: -1, y: 1 },
+        { x: -1, y: -1 }
+      ];
+
+      for (let dir of directions) {
+        let newX = node.x + dir.x;
+        let newY = node.y + dir.y;
+
+        if(newX >= 0 && newX < cols && newY >= 0 && newY < rows &&!grid[newX][newY]) {
+          neighbors.push(new Node(newX, newY, 0, 0, node));
+        }
+      }
+
+      return neighbors;
+    }
+
+    function removeFromArray(arr, elem) {
+      for (let i = arr.length - 1;i >= 0; i--) {
+        if (arr[i].equals(elem)) {
+          arr.splice(i, 1);
+        }
+      }
+    }
+
+    function inArray(arr, node) {
+      for (let elem of arr) {
+        if (elem.equals(node)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function reconstructPath(node) {
+      let path = [];
+      while (node!= null) {
+        path.push(node);
+        node = node.parent;
+      }
+      return path.reverse();
+    }
+
+    function heuristic(aX, aY, bX, bY) {
+      return Math.sqrt(Math.pow(bX - aX, 2) + Math.pow(bY - aY, 2));
+    }
+
+    function star(x, y, radius1, radius2, npoints) {
+      let angle = TWO_PI / npoints;
+      let halfAngle = angle / 2;
+      beginShape();
+      for (let a = 0; a < TWO_PI; a += angle) {
+        let sx = x + cos(a) * radius2;
+let sy = y + sin(a) * radius2;
+        vertex(sx, sy);
+sx = x + cos(a + halfAngle) * radius1;
+        sy = y + sin(a + halfAngle) * radius1;
+        vertex(sx, sy);
+      }
+      endShape(CLOSE);
+    }
+
+    class Node {
+      constructor(x, y, g, h, parent) {
+        this.x = x;
+        this.y = y;
+        this.g = g;
+        this.h = h;
+        this.parent = parent;
+      }
+
+      f() {
+        return this.g + this.h;
+      }
+
+      equals(other) {
+        return this.x === other.x && this.y === other.y;
+      }
+    }
+
+    document.getElementById('run').addEventListener('click', () => {
+      startX = parseInt(document.getElementById('startX').value);
+      startY = parseInt(document.getElementById('startY').value);
+      goalX = parseInt(document.getElementById('goalX').value);
+      goalY = parseInt(document.getElementById('goalY').value);
+      clear();
+      drawGrid();
+      aStar();
+    });
+
+    document.getElementById('reset').addEventListener('click', () => {
+      startX = floor(random(cols));
+      startY = floor(random(rows));
+      goalX = floor(random(cols));
+      goalY = floor(random(rows));
+      initializeGrid();
+      createObstacles();
+      clear();
+      drawGrid();
+      foundPath = false;
+      path = [];
+    });
+
+    setup();
+  </script>
+</body>
+</html>
