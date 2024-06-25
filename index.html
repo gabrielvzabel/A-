@@ -1,38 +1,44 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.play/1.4.0/p5.play.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A*</title>
+  <!-- Incluindo Bootstrap para estilos opcionais -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
   <style>
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background-color: #333;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
     canvas {
       border: 1px solid black;
       margin: 20px auto;
       display: block;
     }
-    h1, h2 {
-      text-align: center;
+    h1, h2, h4 {
+      color: #fff;
+      font-weight: bold;
       margin: 20px;
     }
-    body {
-      font-family: 'Orbitron', sans-serif;
-      background-color: #333;
+    .controls {
       text-align: center;
-    }
-
-   .controls {
-      text-align: center;
-      margin: 20px;
+      margin: 20px auto;
       background-color: #444;
       padding: 20px;
       border-radius: 10px;
       border: 1px solid #555;
+      max-width: 500px;
     }
-
     label {
-      color: #000000;
+      color: #fff;
       font-weight: bold;
+      align-items: center;
+      
     }
-
     input[type="number"] {
       width: 50px;
       height: 30px;
@@ -40,39 +46,58 @@
       padding: 10px;
       border: 1px solid #555;
       border-radius: 5px;
-      background-color: #444;
+      background-color: #666;
       color: #fff;
     }
-
     button[type="button"] {
       background-color: #006eff;
-      color: #333;
+      color: #fff;
       padding: 10px 20px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      margin-top: 10px;
     }
-
     button[type="button"]:hover {
-      background-color: #006eff;
+      background-color: #0056b3;
     }
   </style>
 </head>
 <body>
-  <h1 style="color: #fff; font-weight: bold;">A*</h1>
-  <h4 style="color: #fff; font-weight: bold;">Preto = Início, Azul = Objetivo</h4>
-  <div class="controls">
-    <label for="startX">Coluna do inicio:</label>
-    <input id="startX" type="number" value="0" />
-    <label for="startY">Linha do inicio:</label>
-    <input id="startY" type="number" value="0" />
-    <label for="goalX">Coluna do objetivo:</label>
-    <input id="goalX" type="number" value="4" />
-    <label for="goalY">Linha do objetivo:</label>
-    <input id="goalY" type="number" value="4" />
-    <button id="run" style="background-color: #006eff; color: #333;">Iniciar A*</button>
-    <button id="reset" style="background-color: #f55656; color: #333;">Reiniciar</button>
+  <h1>A*</h1>
+  <h4>Preto = Início, Azul = Objetivo</h4>
+  <div class="container controls">
+    <div class="row">
+      <div class="col-md-3">
+        <label for="startX">Coluna do início:</label>
+        <input id="startX" type="number" value="0" />
+      </div>
+      <div class="col-md-3">
+        <label for="startY">Linha do início:</label>
+        <input id="startY" type="number" value="0" />
+      </div>
+      <div class="col-md-3">
+        <label for="goalX">Coluna do objetivo:</label>
+        <input id="goalX" type="number" value="4" />
+      </div>
+      <div class="col-md-3">
+        <label for="goalY">Linha do objetivo:</label>
+        <input id="goalY" type="number" value="4" />
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-md-6">
+        <button id="run" class="btn btn-primary btn-block">Iniciar A*</button>
+      </div>
+      <div class="col-md-6">
+        <button id="reset" class="btn btn-danger btn-block">Reiniciar</button>
+      </div>
+    </div>
   </div>
+  <div id="canvas-container"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.play/1.4.0/p5.play.js"></script>
   <script>
     let grid = [];
     let cols = 10;
@@ -89,7 +114,7 @@
 
     function setup() {
       let canvas = createCanvas(cols * cellSize, rows * cellSize);
-      canvas.parent(document.body);
+      canvas.parent('canvas-container');
       initializeGrid();
       createObstacles();
       startX = floor(random(cols));
@@ -131,15 +156,15 @@
 
     function drawGrid() {
       background(240);
-      for (let x = 0;x < cols; x++) {
+      for (let x = 0; x < cols; x++) {
         for (let y = 0; y < rows; y++) {
           if (grid[x][y]) {
             fill(255, 0, 0);
           } else if (x === startX && y === startY) {
-            fill(0); // Quadrado preto como início
+            fill(0); 
             rect(x * cellSize, y * cellSize, cellSize, cellSize);
           } else if (x === goalX && y === goalY) {
-            fill(0, 0, 255); // Quadrado azul como objetivo
+            fill(0, 0, 255); 
             rect(x * cellSize, y * cellSize, cellSize, cellSize);
           } else {
             fill(255);
@@ -229,7 +254,7 @@
         let newX = node.x + dir.x;
         let newY = node.y + dir.y;
 
-        if(newX >= 0 && newX < cols && newY >= 0 && newY < rows &&!grid[newX][newY]) {
+        if (newX >= 0 && newX < cols && newY >= 0 && newY < rows && !grid[newX][newY]) {
           neighbors.push(new Node(newX, newY, 0, 0, node));
         }
       }
@@ -238,7 +263,7 @@
     }
 
     function removeFromArray(arr, elem) {
-      for (let i = arr.length - 1;i >= 0; i--) {
+      for (let i = arr.length - 1; i >= 0; i--) {
         if (arr[i].equals(elem)) {
           arr.splice(i, 1);
         }
@@ -256,7 +281,7 @@
 
     function reconstructPath(node) {
       let path = [];
-      while (node!= null) {
+      while (node != null) {
         path.push(node);
         node = node.parent;
       }
@@ -265,21 +290,6 @@
 
     function heuristic(aX, aY, bX, bY) {
       return Math.sqrt(Math.pow(bX - aX, 2) + Math.pow(bY - aY, 2));
-    }
-
-    function star(x, y, radius1, radius2, npoints) {
-      let angle = TWO_PI / npoints;
-      let halfAngle = angle / 2;
-      beginShape();
-      for (let a = 0; a < TWO_PI; a += angle) {
-        let sx = x + cos(a) * radius2;
-let sy = y + sin(a) * radius2;
-        vertex(sx, sy);
-sx = x + cos(a + halfAngle) * radius1;
-        sy = y + sin(a + halfAngle) * radius1;
-        vertex(sx, sy);
-      }
-      endShape(CLOSE);
     }
 
     class Node {
